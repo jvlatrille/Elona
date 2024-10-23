@@ -1,7 +1,6 @@
 # listeDesAdmins = {"Lifzerr": 523926198930243584, "10rd": 583268098983985163}
 
 from datetime import date
-from os import pread
 
 date_du_jour = date.today()
 
@@ -42,33 +41,6 @@ gifBienvenue = [
     "https://media1.tenor.com/m/rRgs6XtH5kEAAAAd/hi-oomf-cute-anime-girl-vtuber.gif",
     "https://media1.tenor.com/m/990MomrAHwEAAAAd/welcome-new-members-senko-san.gif",
     "https://media1.tenor.com/m/ze-1ghpnDd4AAAAC/welcome-anime.gif"
-]
-
-nomArabes = [
-    "mohammed", "ahmed", "ali", "youssef", "omar", "ibrahim", "khaled",
-    "abdullah", "sami", "hassan", "mustafa", "amin", "faisal", "karim",
-    "jamal", "nasser", "tariq", "rashid", "nabil", "hadi", "zakaria", "majid",
-    "hussein", "nasir", "kamal", "yasin", "raed", "said", "mansour", "fahad",
-    "fawzi", "farid", "salim", "adel", "mounir", "salem", "tarik", "marwan",
-    "ziad", "amer", "anwar", "rami", "walid", "khalid", "jamil", "rafiq",
-    "najib", "tarek", "hakim", "wael", "fadi", "mamdouh", "saeed", "osama",
-    "ayman", "nizar", "nadeem", "bassem", "hazem", "bilal", "kassem", "naji",
-    "imad", "adnan", "maher", "karam", "tawfiq", "yaser", "nawaf", "atef",
-    "wahid", "nahed", "samir", "rami", "saleh", "rida", "riyad", "othman",
-    "raja", "nour", "aya", "fatima", "hala", "leila", "amina", "nadia", "lina",
-    "rana", "sara", "noura", "lamia", "safia", "sawsan", "laila", "najwa",
-    "dina", "samira", "dalal", "maha", "nada", "amal", "houda", "zahra",
-    "mouna", "nahla", "rasha", "maya", "zeinab", "asma", "nisrine", "manal",
-    "rima", "roula", "wafa", "mariam", "hanan", "reem", "zainab", "faten",
-    "siham", "fadia", "fadwa", "warda", "jihan", "souad", "hayat", "nahed",
-    "fayza", "jihane", "salma", "loubna", "salam", "nawal", "hiba", "ghada",
-    "widad", "rawan", "riham", "inas", "abeer", "samar", "raghad", "nouha",
-    "sabah", "bushra", "ahlam", "nisreen", "nariman", "shaima", "sana",
-    "malak", "yasmin", "tasneem", "heba", "noor", "naila", "nahla", "nada",
-    "dalia", "hanane", "nihad", "nisrin", "lamis", "lujain", "razan", "raneem",
-    "hadeel", "hawra", "buthaina", "alya", "rahaf", "jana", "joud", "jomana",
-    "joudi", "dana", "hala", "fadia", "fairuz", "rana", "walid", "moulhoud",
-    'mouloud', "mohamed", "abdoul", "maj_dscrd_de_merde"
 ]
 
 listeGifs = [

@@ -12,15 +12,15 @@ from privateai_client import request_objects
 from cachetools import TTLCache
 import sys
 import os
-import confidentiel
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import confidentiel
 
 # Import the confidential module
 
 prefix = "/"
 client = discord.Client(intents=discord.Intents.all())
 bot = commands.Bot(command_prefix=prefix,
-                   description="Bot développé par 10RD et Lifzerr pour le fun",
+                   description="Bot de dév",
                    intents=discord.Intents.all())
 
 idLord = 583268098983985163
@@ -41,7 +41,7 @@ async def on_ready():
 
   if user:
     try:
-      await user.send("Prêt")
+      await user.send("Salut")
       print("Message envoyé à l'hote")
     except discord.Forbidden:
       print(
@@ -52,7 +52,7 @@ async def on_ready():
       status=discord.Status.online,
       activity=discord.Activity(
           type=discord.ActivityType.playing,
-          name="Ping moi pour voir ce que je peux faire"))
+          name="En cours de dév"))
 
 
 @bot.event
