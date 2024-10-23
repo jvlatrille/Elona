@@ -3,21 +3,22 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from discord import Guild
-from discord.ext.commands import MissingPermissions
-import asyncio
-from discord.interactions import Interaction
 import keep_alive
 import data
 import re
-#import pandas as pd  Espèce de gay BRUH ici on aime pas les pédales >:(
-# from replit import db
-import csv
 import json
 import requests
-import io
-from googletrans import Translator
 from privateai_client import PAIClient
 from privateai_client import request_objects
+from cachetools import TTLCache
+#from discord.ext.commands import MissingPermissions
+#import asyncio
+#from discord.interactions import Interaction
+#import pandas as pd
+# from replit import db
+#import csv
+#import io
+#from googletrans import Translator
 
 keep_alive.keep_alive()
 
@@ -49,18 +50,14 @@ async def on_ready():
       print("Message envoyé à l'hote")
     except discord.Forbidden:
       print(
-          f"Impossible d'envoyer un message privé à l'utilisateur avec l'ID {idLord}"
+          f"Impossible d'envoyer un message à l'utilisateur avec l'ID {idLord}"
       )
 
-  await bot.change_presence(status=discord.Status.online,
-                            activity=discord.Activity(
-                                type=discord.ActivityType.playing,
-                                name="Trie les gens tah 1942"))
-
-
-"""
-EVENTS 
-"""
+  await bot.change_presence(
+      status=discord.Status.online,
+      activity=discord.Activity(
+          type=discord.ActivityType.playing,
+          name="Ping moi pour voir ce que je peux faire"))
 
 
 @bot.event
@@ -115,16 +112,12 @@ async def on_message(message):
   # Correction de la vérification du compteur et réponse associée
   if compteur != 0:
     if compteur >= 2:
-      await message.reply(f"Tu es très raciste {message.author.display_name}")
+      await message.reply(
+          f"Tu es très raciste {message.author.display_name} >:(")
     else:
       await message.reply(
-          f"Je crois que tu es raciste {message.author.display_name}")
-
-  # Vérification du banned content
-  for i in data.arabe:
-    if i in message.content.lower():
-      await message.reply("Sale arabe, rentre chez toi :p")
-      return
+          f"Je crois que tu es raciste {message.author.display_name} (c'est mal)"
+      )
 
   # Menaces de ban
   for i in range(0, len(data.bannedContent)):
@@ -158,18 +151,10 @@ async def on_message(message):
 async def on_member_join(member):
   channel = member.guild.system_channel
   if channel:
-    for i in range(0, len(data.nomArabes)):
-      if data.nomArabes[i] in member.name.lower():
-        embed = discord.Embed(
-            title="Bienvenue",
-            description=f"Retourne dans ton pays, sal arabe {member.mention}",
-            color=discord.Color.red())
-        await channel.send(embed=embed)
-        return
     embed = discord.Embed(
         title="Bienvenue",
         description=f"Bienvenue à {member.mention} sur le serveur !",
-        color=discord.Color.green())
+        color=discord.Color.green())    
     embed.set_image(url=random.choice(data.gifBienvenue))
     await channel.send(embed=embed)
 
@@ -186,7 +171,7 @@ async def ping(interaction: discord.Interaction):
   embed = discord.Embed()
   embed.set_image(url=gif_url)
   await interaction.response.send_message(
-      f"Mon temps de traitement est de {bot.latency} secondes \n C'est un peu lent, je sais :confounded::point_right::point_left:",
+      f"Mon temps de traitement est de {bot.latency} secondes \n C'est un peu lent, je sais :confounded::point_right::point_left: \n||c'est génant comme message mais c'est drôle||",
       embed=embed)
 
 
@@ -255,7 +240,7 @@ async def suicide(interaction, member: discord.Member):
 
 # Commande de unban
 @bot.tree.command(name="unban",
-                  description="Son racisme était peut-être utile finalement")
+                  description="C'est comme ban quelqu'un mais en sens inverse")
 async def unban(ctx,
                 user: discord.User,
                 reason: str = "Aucune raison spécifiée"):
@@ -277,10 +262,13 @@ async def unban(ctx,
 
 
 #Commande de kick
-@bot.tree.command(name="kick", description="Dégager un migrant")
+@bot.tree.command(name="kick",
+                  description="Dégager une personne fortement chiante")
 async def kick(ctx, user: discord.User):
   await ctx.guild.kick(user)
-  await ctx.send(f"{user} a été expulsé tah les migrants (ah non).")
+  await ctx.send(
+      f"{user} a été expulsé tah les migrants (ah non).\n||c'est pas très très gentil de dire ça||"
+  )
 
 
 # Commande de clear
@@ -448,117 +436,200 @@ async def image_generation(interaction: discord.Interaction, *, demande: str):
   await interaction.channel.send(embed=embed)
 
 
-@bot.tree.command(name="anime", description="Donne un lien vers un anime")
-async def anime(interaction, nom_anime: str, plateforme: str):
-  plateformes = {
-      "voiranime": "https://v5.voiranime.com/anime/",
-      "animesama": "https://anime-sama.fr/catalogue/"
+def search_anime(name):
+  query = '''
+  query ($name: String) {
+      Media (search: $name, type: ANIME) {
+          id
+          title {
+              romaji  # Alphabet latin
+          }
+          coverImage {
+              large
+          }
+      }
   }
-  plateforme = plateforme.lower()
-  if plateforme not in plateformes:
-    await interaction.response.send_message("Plateforme non prise en charge")
+  '''
+  variables = {'name': name}
+  url = 'https://graphql.anilist.co'
+  response = requests.post(url, json={'query': query, 'variables': variables})
+  data = response.json()
+  if data.get("data", {}).get("Media"):
+    # Récupère le nom précis renvoyé par le site
+    precise_name = data["data"]["Media"]["title"]["romaji"]
+    return data, precise_name
+  return data, None
+
+
+@bot.tree.command(name="anime", description="Donne un lien vers un anime")
+async def anime(interaction, nom_anime: str, plateforme: str = None):
+  anime_data, precise_name = search_anime(nom_anime)
+  if not precise_name:
+    await interaction.response.send_message("Aucun anime trouvé avec ce nom.")
     return
 
-  base_url = plateformes[plateforme]
-  bon_mot = nom_anime.lower().replace(" ", "-")
-  url_complet = f"{base_url}{bon_mot}/"
+  plateformes = {
+      "voiranime": "https://v5.voiranime.com/anime/",
+      "animesama": "https://anime-sama.fr/catalogue/",
+      "animeplanet": "https://www.anime-planet.com/anime/all?name=",
+      "otakufr": "https://otakufr.cc/toute-la-liste-affiches/?q=",
+      "gumgum streaming": "https://gum-gum-streaming.com/",
+      "9anime": "https://9animetv.to/search?keyword=",
+      "animevostfr": "https://animevostfr.tv/?s=",
+      "mavanimes": "https://www.mavanimes.co/?s="
+  }
+  embed = discord.Embed(title=f"Liens pour {precise_name}", color=0x1e88e5)
 
-  try:
-    response = requests.head(url_complet)
-    if response.status_code >= 200 and response.status_code < 300:
-      await interaction.response.send_message(
-          f"Voici le lien vers {nom_anime} sur {plateforme.capitalize()}:\n {url_complet}"
-      )
-    else:
-      await interaction.response.send_message(
-          f"Animé {nom_anime} pas trouvé sur la plateforme {plateforme.capitalize()}"
-      )
-  except requests.exceptions.RequestException:
-    await interaction.response.send_message(
-        "Erreur lors de la requête, veuillez réessayer plus tard")
+  if plateforme:
+    plateforme = plateforme.lower()
+    if plateforme not in plateformes:
+      await interaction.response.send_message("Plateforme non prise en charge")
+      return
+    url_complet = f"{plateformes[plateforme]}{precise_name.lower().replace(' ', '-')}/"
+    embed.add_field(name=f"{plateforme.capitalize()}",
+                    value=f"[{precise_name}]({url_complet})",
+                    inline=False)
+  else:
+    for plat, base_url in plateformes.items():
+      url_complet = f"{base_url}{precise_name.lower().replace(' ', '-')}/"
+      embed.add_field(name=f"{plat.capitalize()}",
+                      value=f"[{precise_name}]({url_complet})",
+                      inline=False)
+
+  # Optionally add image if available
+  anime_cover = anime_data["data"]["Media"]["coverImage"]["large"]
+  if anime_cover:
+    embed.set_image(url=anime_cover)
+
+  await interaction.response.send_message(f'Anime demandé : {nom_anime}\n',
+                                          embed=embed)
 
 
 """
 # Commande liste emojis
-@bot.tree.command(name="liste_emojis",description='Donne la liste des emojis')
-async def liste_emojis(ctx):
-    # Récupérer l'objet Guild du serveur
-    guild = ctx.guild
-    # Récupérer la liste des émoticônes du serveur
-    emojis = guild.emojis
-    # Afficher la liste des émoticônes
-    await ctx.send(f"Voici la liste des émoticônes sur ce serveur :\n{emojis}")
+@bot.tree.command(name="liste_emojis", description='Donne la liste des emojis')
+async def liste_emojis(interaction: discord.Interaction):
+  # Récupérer l'objet Guild du serveur
+  guild = interaction.guild
+  # Récupérer la liste des émoticônes du serveur
+  emojis = guild.emojis
+  # Création d'une chaîne de caractères pour les émoticônes
+  emoji_list = '\n'.join([f"{emoji} — `{emoji.name}`" for emoji in emojis])
+  # Afficher la liste des émoticônes
+  await interaction.response.send_message(
+      f"Voici la liste des émoticônes sur ce serveur :\n{emoji_list}")
 """
 
 
 # Commande pour attribuer des rôles via des réactions
-@bot.tree.command(name="roleattribution", description="Crée un message pour l'attribution automatique de rôles avec des réactions")
+@bot.tree.command(name="roleattribution", description="Attribution de rôles")
 @app_commands.checks.has_permissions(administrator=True)
-async def roleattribution(interaction: discord.Interaction, message: str, color: str, roles: str):
-    roles_list = [role.strip() for role in roles.split()]
-    guild = interaction.guild
+async def roleattribution(interaction: discord.Interaction, message: str,
+                          color: str, roles: str):
+  roles_list = [role.strip() for role in roles.split()]
+  guild = interaction.guild
 
-    # Conversion de la couleur française en hexadécimal
-    color_hex = data.color_dict.get(color.lower())
-    if color_hex is None:
-        await interaction.response.send_message("Couleur invalide. Utilisez une couleur en français, par exemple 'rouge', 'bleu', etc.", ephemeral=True)
-        return
-    embed_color = discord.Color(color_hex)
+  # Conversion de la couleur française en hexadécimal
+  color_hex = data.color_dict.get(color.lower())
+  if color_hex is None:
+    await interaction.response.send_message(
+        "Couleur invalide. Utilisez une couleur en français, par exemple 'rouge', 'bleu', etc.",
+        ephemeral=True)
+    return
+  embed_color = discord.Color(color_hex)
 
-    # Vérification et récupération des rôles mentionnés
-    valid_roles = []
-    role_ids = [int(role_id.strip("<@&>")) for role_id in roles_list if role_id.strip("<@&>").isdigit()]
-    for role_id in role_ids:
-        role = discord.utils.get(guild.roles, id=role_id)
-        if role:
-            valid_roles.append(role)
-        else:
-            await interaction.response.send_message(f"Rôle mentionné non trouvé", ephemeral=True)
-            return
+  # Vérification et récupération des rôles mentionnés
+  valid_roles = []
+  role_ids = [
+      int(role_id.strip("<@&>")) for role_id in roles_list
+      if role_id.strip("<@&>").isdigit()
+  ]
+  for role_id in role_ids:
+    role = discord.utils.get(guild.roles, id=role_id)
+    if role:
+      valid_roles.append(role)
+    else:
+      await interaction.response.send_message(f"Rôle mentionné non trouvé",
+                                              ephemeral=True)
+      return
 
-    # Création de l'embed
-    embed = discord.Embed(title="Attribution de rôles", description=message, color=embed_color)
-    emoji_list = ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '🟤']  # Liste d'émojis prédéfinis (à étendre si nécessaire)
+  # Création de l'embed
+  embed = discord.Embed(title="Attribution de rôles",
+                        description=message,
+                        color=embed_color)
+  emoji_list = ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣',
+                '🟤']  # Liste d'émojis prédéfinis (à étendre si nécessaire)
 
-    if len(valid_roles) > len(emoji_list):
-        await interaction.response.send_message("Trop de rôles pour les émojis disponibles", ephemeral=True)
-        return
+  if len(valid_roles) > len(emoji_list):
+    await interaction.response.send_message(
+        "Trop de rôles pour les émojis disponibles", ephemeral=True)
+    return
 
-    emoji_role_dict = {}
-    for i, role in enumerate(valid_roles):
-        embed.add_field(name=f"Rôle {role.name}", value=f"Réagissez avec {emoji_list[i]}", inline=False)
-        emoji_role_dict[emoji_list[i]] = role
+  emoji_role_dict = {}
+  for i, role in enumerate(valid_roles):
+    embed.add_field(name=f"Rôle {role.name}",
+                    value=f"Réagissez avec {emoji_list[i]}",
+                    inline=False)
+    emoji_role_dict[emoji_list[i]] = role
 
-    # Envoi de l'embed et ajout des réactions
-    bot_message = await interaction.channel.send(embed=embed)
-    for emoji in emoji_role_dict:
-        await bot_message.add_reaction(emoji)
+  # Envoi de l'embed et ajout des réactions
+  bot_message = await interaction.channel.send(embed=embed)
+  for emoji in emoji_role_dict:
+    await bot_message.add_reaction(emoji)
 
-    # Sauvegarde de l'ID du message et des rôles associés (exemple basique, à améliorer pour une persistance)
-    role_message_data[bot_message.id] = emoji_role_dict
-    await interaction.response.send_message("Message de rôle créé avec succès", ephemeral=True)
+  # Sauvegarde de l'ID du message et des rôles associés (exemple basique, à améliorer pour une persistance)
+  role_message_data[bot_message.id] = emoji_role_dict
+  await interaction.response.send_message("Message de rôle créé avec succès",
+                                          ephemeral=True)
+
 
 # Dictionnaire pour stocker les messages de rôle et leurs associations emoji-rôle
 role_message_data = {}
 
+
 @bot.event
 async def on_raw_reaction_add(payload):
-    if payload.message_id in role_message_data:
-        guild = bot.get_guild(payload.guild_id)
-        role = role_message_data[payload.message_id].get(str(payload.emoji))
-        if role:
-            member = guild.get_member(payload.user_id)
-            await member.add_roles(role)
+  if payload.message_id in role_message_data:
+    guild = bot.get_guild(payload.guild_id)
+    role = role_message_data[payload.message_id].get(str(payload.emoji))
+    if role:
+      member = guild.get_member(payload.user_id)
+      await member.add_roles(role)
+
 
 @bot.event
 async def on_raw_reaction_remove(payload):
-    if payload.message_id in role_message_data:
-        guild = bot.get_guild(payload.guild_id)
-        role = role_message_data[payload.message_id].get(str(payload.emoji))
-        if role:
-            member = guild.get_member(payload.user_id)
-            await member.remove_roles(role)
+  if payload.message_id in role_message_data:
+    guild = bot.get_guild(payload.guild_id)
+    role = role_message_data[payload.message_id].get(str(payload.emoji))
+    if role:
+      member = guild.get_member(payload.user_id)
+      await member.remove_roles(role)
 
 
-TOKEN = "MTIwMDgxNTM3NTY4MDU0ODk1NQ.GAkwEL.7NMdEVmfdywYGzlj9BV7l_xWFtqfFHXvEEvgJE"
+# Cache pour les données de rôle, expirant après 1 heure
+role_cache = TTLCache(maxsize=100, ttl=3600)
+
+
+def get_role_from_cache(role_id):
+  role = role_cache.get(role_id)
+  if not role:
+    role = fetch_role(role_id)  # Fonction hypothétique pour récupérer un rôle
+    role_cache[role_id] = role
+  return role
+
+
+# Gestion d'erreurs
+@bot.event
+async def on_command_error(ctx, error):
+  if isinstance(error, commands.CommandInvokeError):
+    await ctx.send(
+        "Une erreur s'est produite lors de l'exécution de votre commande.")
+  elif isinstance(error, commands.CommandOnCooldown):
+    await ctx.send(
+        f"Cette commande est en cooldown. Réessayez dans {error.retry_after:.2f} secondes."
+    )
+
+
+TOKEN = "MTIwMDgxNTM3NTY4MDU0ODk1NQ.GNmysS.hb7H3DVI7sytpVFFl7ZXTnzJAwQz0xqDss35Po"
 bot.run(TOKEN)
