@@ -3,7 +3,6 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from discord import Guild
-import keep_alive
 import data
 import re
 import json
@@ -11,16 +10,12 @@ import requests
 from privateai_client import PAIClient
 from privateai_client import request_objects
 from cachetools import TTLCache
-#from discord.ext.commands import MissingPermissions
-#import asyncio
-#from discord.interactions import Interaction
-#import pandas as pd
-# from replit import db
-#import csv
-#import io
-#from googletrans import Translator
+import sys
+import os
+import confidentiel
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-keep_alive.keep_alive()
+# Import the confidential module
 
 prefix = "/"
 client = discord.Client(intents=discord.Intents.all())
@@ -631,5 +626,4 @@ async def on_command_error(ctx, error):
     )
 
 
-TOKEN = "MTIwMDgxNTM3NTY4MDU0ODk1NQ.GNmysS.hb7H3DVI7sytpVFFl7ZXTnzJAwQz0xqDss35Po"
-bot.run(TOKEN)
+bot.run(confidentiel.TOKENELONA)
