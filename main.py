@@ -312,90 +312,6 @@ async def giflist(interaction: discord.Interaction):
     await interaction.channel.send(f"Il y a {len(data.listeGifs)} gifs dans la liste")
 
 
-# Fonction anti-crash pour le chatbot
-async def reponsechat(payload, question, interaction: discord.Interaction):
-    # Envoi de la requête à l'API de chatbot
-    headers = {
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYmFkYjIzOTMtNzA2Yy00Mzg5LWJlZGEtYTIzYzY0NmNkODczIiwidHlwZSI6ImFwaV90b2tlbiJ9.eU_g2u6jGl9f_YCbrRndfOA1bdhJPY4vgxZBYct7WR4"
-    }
-    # eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMjNhNjEyZTUtOTcwMy00OWU0LWJlNDktNDBmODQyZTE0NWFlIiwidHlwZSI6ImFwaV90b2tlbiJ9.jYzcAVG6UaBgQg61XnJVpr8OyYIbbUo3GmtqzKtD6jo
-    url = "https://api.edenai.run/v2/text/chat"
-
-    response = requests.post(url, json=payload, headers=headers)
-
-    # Traitement de la réponse
-    if response.status_code == 200:
-        result = json.loads(response.text)
-        generated_text = result["openai"]["generated_text"]
-        await interaction.channel.send(f"\n{generated_text}")
-    else:
-        await interaction.channel.send(
-            "\nUne erreur s'est produite lors de la communication avec le chatbot."
-        )
-
-
-# Commande de chatbot
-@bot.tree.command(name="chat", description="Discutez avec le bot")
-async def chat(interaction: discord.Interaction, *, question: str):
-    # Préparation de la requête à l'API de chatbot
-
-    payload = {
-        "providers": "openai",
-        "text": question,
-        "chatbot_global_action": data.aiprompt,
-        "previous_history": [],
-        "temperature": 0.0,
-        "max_tokens": 1500,
-        "fallback_providers": "",
-    }
-    await interaction.response.send_message(f"{interaction.user} : {question}")
-    reponse = reponsechat(payload, question, interaction)
-    await reponse
-
-
-# Commande de chatbot de droite
-@bot.tree.command(
-    name="chad", description="Discutez avec le bot de façon non politiquement correcte"
-)
-async def chad(interaction: discord.Interaction, *, question: str):
-    # Préparation de la requête à l'API de chatbot
-
-    payload = {
-        "providers": "openai",
-        "text": question,
-        "chatbot_global_action": data.aipromptDroite,
-        "previous_history": [],
-        "temperature": 0.0,
-        "max_tokens": 1500,
-        "fallback_providers": "",
-    }
-    await interaction.response.send_message(f"{interaction.user} : {question}")
-    await reponsechat(payload, question, interaction)
-
-
-# Essaie nouvelle API
-@bot.tree.command(name="chate", description="Discutez avec le bot")
-async def chate(interaction: discord.Interaction, *, question: str):
-    client = PAIClient(
-        url="https://api.private-ai.com/deid",
-        api_key="9edf80d36eb846848dbdfa95a96bfcf9",
-    )
-    text_request = request_objects.process_text_obj(text=["question"])
-    response = client.process_text(text_request)
-
-    await interaction.response.send_message(response.processed_text)
-
-
-"""
-client = PAIClient(url="https://api.private-ai.com/deid", api_key=9edf80d36eb846848dbdfa95a96bfcf9)
-text_request = request_objects.process_text_obj(text=["My sample name is John Smith"])
-response = client.process_text(text_request)
-
-print(text_request.text)
-print(response.processed_text)
-"""
-
-
 # Commande 8ball
 @bot.tree.command(name="8ball", description='Posez une question à la "boule magique"')
 async def eight_ball(interaction: discord.Interaction, *, question: str):
@@ -510,22 +426,6 @@ async def anime(interaction, nom_anime: str, plateforme: str = None):
     await interaction.response.send_message(
         f"Anime demandé : {nom_anime}\n", embed=embed
     )
-
-
-"""
-# Commande liste emojis
-@bot.tree.command(name="liste_emojis", description='Donne la liste des emojis')
-async def liste_emojis(interaction: discord.Interaction):
-  # Récupérer l'objet Guild du serveur
-  guild = interaction.guild
-  # Récupérer la liste des émoticônes du serveur
-  emojis = guild.emojis
-  # Création d'une chaîne de caractères pour les émoticônes
-  emoji_list = '\n'.join([f"{emoji} — `{emoji.name}`" for emoji in emojis])
-  # Afficher la liste des émoticônes
-  await interaction.response.send_message(
-      f"Voici la liste des émoticônes sur ce serveur :\n{emoji_list}")
-"""
 
 
 # Commande pour attribuer des rôles via des réactions
