@@ -7,8 +7,6 @@ import data
 import re
 import json
 import requests
-from privateai_client import PAIClient
-from privateai_client import request_objects
 from cachetools import TTLCache
 import sys
 import os
