@@ -1,3 +1,32 @@
+import os
+import subprocess
+import sys
+
+
+# Installation automatique des packages requis
+def install_requirements():
+    # On récupère le chemin absolu du répertoire où se trouve le script actuel
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    requirements_path = os.path.join(current_dir, "requirements.txt")
+
+    if os.path.exists(requirements_path):
+        try:
+            print("Installation des dépendances...")
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", "-r", requirements_path]
+            )
+            print("Installation terminée.")
+        except subprocess.CalledProcessError as e:
+            print(f"Erreur lors de l'installation des dépendances: {e}")
+            sys.exit(1)
+    else:
+        print("Erreur : Le fichier requirements.txt est introuvable.")
+        sys.exit(1)
+
+
+install_requirements()
+
+# Ensuite, tes imports réguliers
 import random
 import discord
 from discord.ext import commands
@@ -5,16 +34,22 @@ from discord import app_commands
 from discord import Guild
 import data
 import re
-import json
 import requests
 from cachetools import TTLCache
-import sys
-import os
+import logging
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import confidentiel
 
-# Import the confidential module
+
+idLord = 583268098983985163
+idLifzerr = 523926198930243584
+# Configuration de logging
+logging.basicConfig(
+    level=logging.WARNING,
+    format="%(asctime)s : %(message)s",  # Format personnalisé pour inclure l'heure et le message
+    datefmt="%Y-%m-%d %H:%M:%S",  # Format de la date
+)
 
 prefix = "/"
 client = discord.Client(intents=discord.Intents.all())
@@ -22,8 +57,11 @@ bot = commands.Bot(
     command_prefix=prefix, description="Bot de dév", intents=discord.Intents.all()
 )
 
-idLord = 583268098983985163
-idLifzerr = 523926198930243584
+
+def log_command_usage(user, command_name, arguments=""):
+    print(
+        f"User {user} a exécuté la commande: {command_name} avec les arguments: {arguments}"
+    )
 
 
 # Infos du bot
@@ -138,6 +176,51 @@ async def on_message(message):
 
     # Reset du compteur
     compteur = 0
+
+
+@bot.event
+async def on_message(message):
+    # Ne prend pas en compte les messages des bots
+    if message.author.bot:
+        return
+
+    # Log des messages reçus
+    logging.info(f"Message reçu de {message.author}: {message.content}")
+
+    # Appel pour traiter les commandes
+    await bot.process_commands(message)
+
+
+@bot.event
+async def on_command(ctx):
+    command_name = ctx.command.name
+    user = ctx.author
+    arguments = " ".join(ctx.args[1:]) if len(ctx.args) > 1 else "Aucun argument"
+
+    # Création du message de log personnalisé
+    log_message = (
+        f" {user.name}, id : {user.id}\n"
+        f"A exécuté la commande: {command_name} avec les arguments: {arguments}\n"
+    )
+
+    # Log du message
+    logging.info(log_message)
+
+
+@bot.event
+async def on_interaction(interaction: discord.Interaction):
+    if interaction.type == discord.InteractionType.application_command:
+        command_name = interaction.command.name if interaction.command else "inconnue"
+        user = interaction.user
+
+        # Création du message de log personnalisé
+        log_message = (
+            f" {user.name}, id: {user.id}\n"
+            f"A exécuté la commande slash: {command_name}\n"
+        )
+
+        # Log du message
+        logging.info(log_message)
 
 
 # Message de bienvenue
