@@ -37,6 +37,7 @@ import re
 import requests
 from cachetools import TTLCache
 import logging
+from datetime import timedelta
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import confidentiel
@@ -391,6 +392,52 @@ async def giflist(interaction: discord.Interaction):
         embed.set_image(url=gif)
         await interaction.channel.send(embed=embed)
     await interaction.channel.send(f"Il y a {len(data.listeGifs)} gifs dans la liste")
+
+# Commande restore
+@bot.tree.command(
+    name="restore", description="Restaure les noms de salons depuis un moment donné"
+)
+@app_commands.describe(
+    minutes="Nombre de minutes dans le passé (max 2880)"
+)
+async def restore(interaction: discord.Interaction, minutes: int):
+    if minutes <= 0 or minutes > 2880:
+        await interaction.response.send_message(
+            "Le nombre de minutes doit être compris entre 1 et 2880.",
+            ephemeral=True,
+        )
+        return
+
+    restore_from = discord.utils.utcnow() - timedelta(minutes=minutes)
+
+    count = 0
+    async for entry in interaction.guild.audit_logs(
+        action=discord.AuditLogAction.channel_update,
+        after=restore_from,
+        oldest_first=False,
+    ):
+        channel = entry.target
+        before = entry.before
+        if (
+            isinstance(channel, discord.abc.GuildChannel)
+            and before
+            and before.name
+        ):
+            try:
+                await channel.edit(
+                    name=before.name,
+                    reason=f"Restore command by {interaction.user}",
+                )
+                count += 1
+            except discord.Forbidden:
+                continue
+
+    formatted = restore_from.strftime("%Y-%m-%d %H:%M UTC")
+    await interaction.response.send_message(
+        f"Restauration terminée depuis {formatted}. {count} salon(s) modifié(s).",
+        ephemeral=True,
+    )
+
 
 
 # Commande 8ball
