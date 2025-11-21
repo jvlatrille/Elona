@@ -1,3 +1,4 @@
+from email import message
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -56,9 +57,6 @@ bot = commands.Bot(
     command_prefix=prefix, description="Bot de dév", intents=discord.Intents.all()
 )
 
-idLord = 583268098983985163
-idLifzerr = 523926198930243584
-
 client_ai = OpenAI(api_key=confidentiel.OPENAI_API_KEY)
 
 historiques_salons = {}
@@ -87,11 +85,18 @@ async def generate_reply(channel_id):
         "content": "Réponds toujours quelque chose, même si le message reçu est très court."
     })
 
-    res = client_ai.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=msgs,
-        max_completion_tokens=200,
-    )
+    try:
+        res = client_ai.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=msgs,
+            max_completion_tokens=200,
+            temperature=0.7,
+            frequency_penalty=0.2,
+            presence_penalty=0.1,
+        )
+    except Exception as e:
+        print("Erreur OpenAI :", e)
+        return "ptdr le cerveau m'a lâché deux secondes"
 
     txt = res.choices[0].message.content
     if not txt or txt.strip() == "":
@@ -116,19 +121,19 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-    user = bot.get_user(idLord)
+    user = bot.get_user(583268098983985163) # Mon id discord
 
     if user:
         try:
             await user.send("Salut")
             print("Message envoyé à l'hote")
         except discord.Forbidden:
-            print(f"Impossible d'envoyer un message à l'utilisateur avec l'ID {idLord}")
+            print(f"Impossible d'envoyer un message à l'utilisateur avec l'ID 583268098983985163 (10RD)")
 
     await bot.change_presence(
         status=discord.Status.online,
         activity=discord.Activity(
-            type=discord.ActivityType.playing, name="Coucou, still cooking..."
+            type=discord.ActivityType.playing, name="Still cooking..."
         ),
     )
 
@@ -140,12 +145,19 @@ async def on_message(message):
     # ---------------------------------------------------------
     if message.author.bot:
         return
+    
+    content = message.content.lower() # Récup du message
 
     # ---------------------------------------------------------
     # 1) IA : DM (toujours actif)
     # ---------------------------------------------------------
     if isinstance(message.channel, discord.DMChannel):
-        add_to_history(message.author.id, "user", message.content)
+        contenu_user = message.content
+
+        if message.attachments:
+            contenu_user += " (note : l’utilisateur a envoyé une pièce jointe, je ne peux pas la lire)"
+
+        add_to_history(message.author.id, "user", contenu_user)
         async with message.channel.typing():
             rep = await generate_reply(message.author.id)
         return await message.channel.send(rep)
@@ -155,17 +167,16 @@ async def on_message(message):
     # ---------------------------------------------------------
     if message.guild and message.guild.id == confidentiel.SERVEUR_CIBLE:
         if not confidentiel.SALONS_AUTORISES or message.channel.id in confidentiel.SALONS_AUTORISES:
-            add_to_history(message.channel.id, "user", message.content)
+            contenu_user = message.content
+
+            if message.attachments:
+                contenu_user += " (note : l’utilisateur a envoyé une pièce jointe, je ne peux pas la lire)"
+
+            add_to_history(message.channel.id, "user", contenu_user)
+
             async with message.channel.typing():
                 rep = await generate_reply(message.channel.id)
-            await message.channel.send(rep)
-            return   
-
-    # ---------------------------------------------------------
-    # 3) TON ANCIEN CODE "BOT NORMAL"
-    # ---------------------------------------------------------
-
-    compteur = 0
+            return await message.channel.send(rep)
 
     # Mention SEULE du bot
     if (
@@ -188,11 +199,11 @@ async def on_message(message):
         )
 
     # salutations
-    for j in range(len(data.salutations)):
-        if data.salutations[j].lower() == message.content.lower():
-            await message.reply(
-                f"{random.choice(data.salutations)} {message.author.display_name} \n{random.choice(data.politesse)} ?"
-            )
+    if content in {s.lower() for s in data.salutations}:
+        await message.reply(
+            f"{random.choice(data.salutations)} {message.author.display_name} \n{random.choice(data.politesse)} ?"
+        )
+
 
     # "et toi"
     if bot.user.mentioned_in(message) and "et toi" in message.content.lower():
@@ -201,17 +212,16 @@ async def on_message(message):
         )
 
     # racisme
-    for mot in data.listeMotRacistes:
-        if mot.lower() in message.content.lower():
-            compteur += 1
+    racistes = [m for m in data.listeMotRacistes if m.lower() in content]
 
-    if compteur != 0:
-        if compteur >= 2:
+    if racistes:
+        if len(racistes) >= 2:
             await message.reply(f"Tu es très raciste {message.author.display_name} >:(")
         else:
             await message.reply(
                 f"Je crois que tu es raciste {message.author.display_name} (c'est mal)"
             )
+
 
     # ban threat
     for mot in data.bannedContent:
@@ -226,9 +236,8 @@ async def on_message(message):
             return
 
     # quoi / feur
-    quoi = message.content.lower().strip(".,!?")
-    if re.search(r"quoi\s*$", quoi):
-        await message.reply(f"{random.choice(data.feur)}")
+    if re.search(r"\bquoi\b", message.content.lower().strip(" .,!?")):
+        await message.reply(random.choice(data.feur))
 
     # nice / noice
     if "nice" in message.content.lower() or "noice" in message.content.lower():
@@ -558,28 +567,30 @@ async def image_generation(interaction: discord.Interaction, *, demande: str):
 
 
 def search_anime(name):
-    query = """
-  query ($name: String) {
-      Media (search: $name, type: ANIME) {
-          id
-          title {
-              romaji  # Alphabet latin
-          }
-          coverImage {
-              large
-          }
-      }
-  }
-  """
-    variables = {"name": name}
-    url = "https://graphql.anilist.co"
-    response = requests.post(url, json={"query": query, "variables": variables})
-    data = response.json()
-    if data.get("data", {}).get("Media"):
-        # Récupère le nom précis renvoyé par le site
-        precise_name = data["data"]["Media"]["title"]["romaji"]
-        return data, precise_name
-    return data, None
+    try:
+        query = """
+        query ($name: String) {
+            Media (search: $name, type: ANIME) {
+                id
+                title { romaji }
+                coverImage { large }
+            }
+        }
+        """
+        variables = {"name": name}
+        url = "https://graphql.anilist.co"
+        response = requests.post(url, json={"query": query, "variables": variables}, timeout=5)
+        data = response.json()
+
+        media = data.get("data", {}).get("Media")
+        if media:
+            return data, media["title"]["romaji"]
+
+    except Exception as e:
+        print("Erreur AniList:", e)
+
+    return None, None
+
 
 
 @bot.tree.command(name="anime", description="Donne un lien vers un anime")
@@ -738,12 +749,17 @@ async def on_raw_reaction_remove(payload):
 role_cache = TTLCache(maxsize=100, ttl=3600)
 
 
-def get_role_from_cache(role_id):
+def fetch_role(guild, role_id):
+    return guild.get_role(role_id)
+
+def get_role_from_cache(guild, role_id):
     role = role_cache.get(role_id)
     if not role:
-        role = fetch_role(role_id)  # Fonction hypothétique pour récupérer un rôle
-        role_cache[role_id] = role
+        role = fetch_role(guild, role_id)
+        if role:
+            role_cache[role_id] = role
     return role
+
 
 
 # Gestion d'erreurs
