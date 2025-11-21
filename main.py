@@ -1,6 +1,24 @@
-import os
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import subprocess
-import sys
+import random
+import re
+import requests
+import logging
+from datetime import datetime, timedelta, timezone
+
+import discord
+from discord.ext import commands
+from discord import app_commands
+
+from cachetools import TTLCache
+
+# === IMPORTS PROJET ===
+import data
+import confidentiel
+from openai import OpenAI
+
 
 
 # Installation automatique des packages requis
@@ -26,25 +44,6 @@ def install_requirements():
 
 install_requirements()
 
-# Ensuite, tes imports réguliers
-import random
-import discord
-from discord.ext import commands
-from discord import app_commands
-from discord import Guild
-import data
-import re
-import requests
-from cachetools import TTLCache
-import logging
-from datetime import timedelta
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-import confidentiel
-
-
-idLord = 583268098983985163
-idLifzerr = 523926198930243584
 # Configuration de logging
 logging.basicConfig(
     level=logging.WARNING,
@@ -53,11 +52,53 @@ logging.basicConfig(
 )
 
 prefix = "/"
-client = discord.Client(intents=discord.Intents.all())
 bot = commands.Bot(
     command_prefix=prefix, description="Bot de dév", intents=discord.Intents.all()
 )
 
+idLord = 583268098983985163
+idLifzerr = 523926198930243584
+
+client_ai = OpenAI(api_key=confidentiel.OPENAI_API_KEY)
+
+historiques_salons = {}
+
+def load_prompt(path):
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+PROMPT_GENERAL = load_prompt("prompts/prompt_general.txt")
+PROMPT_ELONA   = load_prompt("prompts/prompt_elona.txt")
+def init_history(prompt=PROMPT_GENERAL):
+    return [{"role": "system", "content": prompt}]
+
+def add_to_history(channel_id, role, content):
+    if channel_id not in historiques_salons:
+        historiques_salons[channel_id] = init_history()
+    historiques_salons[channel_id].append({"role": role, "content": content})
+
+
+async def generate_reply(channel_id):
+    msgs = historiques_salons.get(channel_id, init_history())
+    msgs = msgs[-10:]
+
+    msgs.append({
+        "role": "system",
+        "content": "Réponds toujours quelque chose, même si le message reçu est très court."
+    })
+
+    res = client_ai.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=msgs,
+        max_completion_tokens=200,
+    )
+
+    txt = res.choices[0].message.content
+    if not txt or txt.strip() == "":
+        txt = "ptdr j'ai bugué deux secondes"
+
+    add_to_history(channel_id, "assistant", txt)
+    return txt
 
 def log_command_usage(user, command_name, arguments=""):
     print(
@@ -87,34 +128,55 @@ async def on_ready():
     await bot.change_presence(
         status=discord.Status.online,
         activity=discord.Activity(
-            type=discord.ActivityType.playing, name="En cours de dév"
+            type=discord.ActivityType.playing, name="Coucou, still cooking..."
         ),
     )
 
 
 @bot.event
 async def on_message(message):
-    # Variables
-    compteur = 0
-
-    # Ne prend pas en compte les messages des bots
+    # ---------------------------------------------------------
+    # 0) IGNORER LES BOTS
+    # ---------------------------------------------------------
     if message.author.bot:
         return
 
-    # Mention SEULE du bot (affiche les différentes fonctionnalités)
+    # ---------------------------------------------------------
+    # 1) IA : DM (toujours actif)
+    # ---------------------------------------------------------
+    if isinstance(message.channel, discord.DMChannel):
+        add_to_history(message.author.id, "user", message.content)
+        async with message.channel.typing():
+            rep = await generate_reply(message.author.id)
+        return await message.channel.send(rep)
+
+    # ---------------------------------------------------------
+    # 2) IA : salons autorisés sur serveur cible
+    # ---------------------------------------------------------
+    if message.guild and message.guild.id == confidentiel.SERVEUR_CIBLE:
+        if not confidentiel.SALONS_AUTORISES or message.channel.id in confidentiel.SALONS_AUTORISES:
+            add_to_history(message.channel.id, "user", message.content)
+            async with message.channel.typing():
+                rep = await generate_reply(message.channel.id)
+            await message.channel.send(rep)
+            return   
+
+    # ---------------------------------------------------------
+    # 3) TON ANCIEN CODE "BOT NORMAL"
+    # ---------------------------------------------------------
+
+    compteur = 0
+
+    # Mention SEULE du bot
     if (
         bot.user in message.mentions
         and len(message.mentions) == 1
         and message.content.strip() == f"<@{bot.user.id}>"
     ):
-
-        # Récupération des commandes et leur desc
         command_list = [
             f"{command.name}: {command.description}\n"
             for command in bot.tree.walk_commands()
         ]
-
-        # Liste des commandes
         embed = discord.Embed(title="Liste des commandes :", color=0x00FFFF)
         sans_admin = [command for command in command_list if "[admin]" not in command]
         commandes = "\n".join(sans_admin)
@@ -125,24 +187,24 @@ async def on_message(message):
             embed=embed,
         )
 
-    for j in range(0, len(data.salutations)):
+    # salutations
+    for j in range(len(data.salutations)):
         if data.salutations[j].lower() == message.content.lower():
             await message.reply(
                 f"{random.choice(data.salutations)} {message.author.display_name} \n{random.choice(data.politesse)} ?"
             )
 
-    # Répondre à "et toi" seulement si le bot est mentionné
+    # "et toi"
     if bot.user.mentioned_in(message) and "et toi" in message.content.lower():
         await message.reply(
             "Je suis un bot.\nTant que ma connexion est bonne, je suis heureux (ce n'est pas le cas actuellement)."
         )
 
-    # Vérification des mots racistes
-    for i in range(0, len(data.listeMotRacistes)):
-        if data.listeMotRacistes[i].lower() in message.content.lower():
-            compteur = compteur + 1
+    # racisme
+    for mot in data.listeMotRacistes:
+        if mot.lower() in message.content.lower():
+            compteur += 1
 
-    # Correction de la vérification du compteur et réponse associée
     if compteur != 0:
         if compteur >= 2:
             await message.reply(f"Tu es très raciste {message.author.display_name} >:(")
@@ -151,9 +213,9 @@ async def on_message(message):
                 f"Je crois que tu es raciste {message.author.display_name} (c'est mal)"
             )
 
-    # Menaces de ban
-    for i in range(0, len(data.bannedContent)):
-        if data.bannedContent[i].lower() in message.content.lower():
+    # ban threat
+    for mot in data.bannedContent:
+        if mot.lower() in message.content.lower():
             gifToSend = random.choice(data.attention)
             embed = discord.Embed()
             embed.set_image(url=gifToSend)
@@ -163,33 +225,21 @@ async def on_message(message):
             await message.reply(embed=embed)
             return
 
-    # Réponse à "quoi"
-    # Virer la ponctuation
+    # quoi / feur
     quoi = message.content.lower().strip(".,!?")
-    if re.search(r"quoi\s*([.,!?])?$", quoi):
+    if re.search(r"quoi\s*$", quoi):
         await message.reply(f"{random.choice(data.feur)}")
 
-    # Réponse à "nice" / "noice"
+    # nice / noice
     if "nice" in message.content.lower() or "noice" in message.content.lower():
-        await message.reply(
-            "https://media1.tenor.com/m/H6sjheSkU1wAAAAC/noice-nice.gif"
-        )
+        await message.reply("https://media1.tenor.com/m/H6sjheSkU1wAAAAC/noice-nice.gif")
 
-    # Reset du compteur
-    compteur = 0
-
-
-@bot.event
-async def on_message(message):
-    # Ne prend pas en compte les messages des bots
-    if message.author.bot:
-        return
-
-    # Log des messages reçus
-    logging.info(f"Message reçu de {message.author}: {message.content}")
-
-    # Appel pour traiter les commandes
+    # ---------------------------------------------------------
+    # 4) TRAITEMENT DES COMMANDES
+    # ---------------------------------------------------------
     await bot.process_commands(message)
+
+
 
 
 @bot.event
@@ -241,7 +291,34 @@ async def on_member_join(member):
 """
 COMMANDES /
 """
+@bot.tree.command(name="elona", description="Analyse la discussion du salon avec la personnalité Elona")
+async def elona_command(interaction: discord.Interaction):
+    channel = interaction.channel
+    channel_id = channel.id
 
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(hours=24)
+
+    messages = []
+    async for msg in channel.history(limit=200):
+        if msg.created_at < cutoff:
+            break
+        if msg.author.id == bot.user.id:
+            continue
+        if msg.content:
+            messages.append(msg)
+
+    # reset hist perso
+    historiques_salons[channel_id] = init_history(PROMPT_ELONA)
+
+    for m in reversed(messages[-30:]):
+        add_to_history(channel_id, "user", m.content)
+
+    await interaction.response.defer()
+    async with channel.typing():
+        rep = await generate_reply(channel_id)
+
+    await interaction.edit_original_response(content=rep)
 
 # Commande de ping
 @bot.tree.command(name="ping", description="Retour de la latence du bot")
