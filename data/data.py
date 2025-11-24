@@ -52,47 +52,42 @@ listeMotRacistes = [
 ]
 
 gifCringe = [
-    "https://media1.tenor.com/m/hCqcNUuWCf0AAAAC/blush-anime.gif",
-    "https://media1.tenor.com/m/qcaSPLhZgBwAAAAd/anime-anime-shy.gif",
-    "https://media1.tenor.com/m/Y-9-VTaDbQMAAAAC/anime-anime-shy.gif",
-    "https://media1.tenor.com/m/VrfSZUjiWn4AAAAC/shy-anime.gif",
-    "https://media1.tenor.com/m/laI7gaNmNQIAAAAd/seishun-buta-yarou-anime.gif",
-    "https://media1.tenor.com/m/2cVmIkey2V8AAAAd/pokemon-pikachu.gif",
+    "https://c.tenor.com/hCqcNUuWCf0AAAAC/tenor.gif",
+    "https://c.tenor.com/qcaSPLhZgBwAAAAd/tenor.gif",
+    "https://c.tenor.com/Y-9-VTaDbQMAAAAC/tenor.gif",
+    "https://c.tenor.com/VrfSZUjiWn4AAAAC/tenor.gif",
+    "https://c.tenor.com/laI7gaNmNQIAAAAd/tenor.gif",
+    "https://c.tenor.com/2cVmIkey2V8AAAAd/tenor.gif",
 ]
 
 gifBienvenue = [
-    "https://media1.tenor.com/m/o53muQJmJdcAAAAC/anime.gif",
-    "https://media1.tenor.com/m/rRgs6XtH5kEAAAAd/hi-oomf-cute-anime-girl-vtuber.gif",
-    "https://media1.tenor.com/m/990MomrAHwEAAAAd/welcome-new-members-senko-san.gif",
-    "https://media1.tenor.com/m/ze-1ghpnDd4AAAAC/welcome-anime.gif",
+    "https://c.tenor.com/o53muQJmJdcAAAAC/tenor.gif",
+    "https://c.tenor.com/rRgs6XtH5kEAAAAd/tenor.gif",
+    "https://c.tenor.com/990MomrAHwEAAAAd/tenor.gif",
+    "https://c.tenor.com/ze-1ghpnDd4AAAAC/tenor.gif",
 ]
 
 listeGifs = [
-    "https://media1.tenor.com/m/KeUoxWbm5GUAAAAd/black-rising.gif",
-    "https://media1.tenor.com/m/3h9hCobBj2IAAAAC/african-natives.gif",
-    "https://media1.tenor.com/m/CJzND7ZG60wAAAAC/thanos-banned.gif",
-    "https://media1.tenor.com/m/WhMCzCsNTmcAAAAC/gay-cowboy-meme.gif",
-    "https://media1.tenor.com/m/gvI_X4RYJzoAAAAC/adalfarus-sac.gif",
-    "https://media1.tenor.com/m/lkYNI-c22U8AAAAd/rocksideroad-kimsohyun.gif",
-    "https://media1.tenor.com/m/qbbICAdeoGsAAAAd/es-negro-hijo.gif",
-    "https://media1.tenor.com/m/xw8nrJixossAAAAC/loki-loki-sad.gif",
-    "https://media1.tenor.com/m/3lrAumpKhAkAAAAC/arabic-text-arabic.gif",
-    "https://media1.tenor.com/m/Jz5HT2vyHzEAAAAd/arabic.gif",
+    "https://c.tenor.com/3h9hCobBj2IAAAAC/tenor.gif",
+    "https://c.tenor.com/lkYNI-c22U8AAAAd/tenor.gif",
+    "https://c.tenor.com/qbbICAdeoGsAAAAd/tenor.gif",
+    "https://c.tenor.com/xw8nrJixossAAAAC/tenor.gif",
+    "https://c.tenor.com/3lrAumpKhAkAAAAC/tenor.gif",
+    "https://c.tenor.com/Jz5HT2vyHzEAAAAd/tenor.gif",
 ]
 
 attention = [
-    "https://media1.tenor.com/m/Zc9p59Jemu8AAAAC/warning-nainika.gif",
-    "https://media1.tenor.com/m/H2EsNxHunq4AAAAC/final-warning-warning.gif",
-    "https://media1.tenor.com/m/C1LW1y_XspoAAAAC/warning-angry.gif",
+    "https://c.tenor.com/Zc9p59Jemu8AAAAC/tenor.gif",
+    "https://c.tenor.com/H2EsNxHunq4AAAAC/tenor.gif",
+    "https://c.tenor.com/C1LW1y_XspoAAAAC/tenor.gif",
 ]
 
 feur = [
-    "https://media1.tenor.com/m/CJIntL3axZUAAAAd/feur-meme.gif",
-    "https://media1.tenor.com/m/cjq-FpCxTaoAAAAC/feur-th%C3%A9obabac.gif",
-    "https://media1.tenor.com/m/zvg8w0FkecYAAAAC/feur-theobabac.gif",
-    "https://media1.tenor.com/m/W82_AKnTBgUAAAAC/feur.gif",
-    "https://media1.tenor.com/m/U6y_qJj24V4AAAAC/feur-quoi.gif",
-    "https://media1.tenor.com/m/MKwpJdV9qrUAAAAC/feur-heart-locket.gif",
+    "https://c.tenor.com/CJIntL3axZUAAAAd/tenor.gif",
+    "https://c.tenor.com/cjq-FpCxTaoAAAAC/tenor.gif",
+    "https://c.tenor.com/zvg8w0FkecYAAAAC/tenor.gif",
+    "https://c.tenor.com/W82_AKnTBgUAAAAC/tenor.gif",
+    "https://c.tenor.com/MKwpJdV9qrUAAAAC/tenor.gif",
 ]
 
 listeGifs.extend(gifCringe)
