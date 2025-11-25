@@ -39,8 +39,12 @@ async def setup(bot):
 
         # ajoute les 30 derniers messages uniquement
         for m in reversed(messages[-30:]):
+            # On récupère le nom de l'auteur pour préfixer le message
+            author_name = m.author.display_name if m.guild else m.author.name
+            
             # On suppose que add_to_history est valide
-            add_to_history(channel_id, "user", m.content)
+            # On envoie le message préfixé : "NomUtilisateur: Texte du message"
+            add_to_history(channel_id, "user", f"{author_name}: {m.content}")
 
         # --- 3) Interaction Discord ---
         # "Thinking... (public)" -> C'est correct

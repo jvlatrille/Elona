@@ -38,12 +38,20 @@ async def setup(bot):
 
         # --- Exécution de la réaction IA si do_react est True ---
         if do_react and cid:
+            # On prend le nom d'affichage ou le nom d'utilisateur
+            user_name = message.author.display_name if message.guild else message.author.name
+            
             content = message.content
             if message.attachments:
                 content += " (note : pièce jointe non lisible)"
             
+            # NOUVEAUTÉ : On préfixe le contenu avec le nom de l'utilisateur.
+            # Cela permet à Elona de détecter qui dit quoi.
+            final_content = f"{user_name}: {content}" 
+            
             try:
-                add_to_history(cid, "user", content)
+                # On ajoute le contenu préfixé à l'historique
+                add_to_history(cid, "user", final_content)
                 rep = await generate_reply(cid)
                 await message.channel.send(rep)
                 return 
