@@ -3,6 +3,7 @@
 import discord
 from discord import app_commands
 import random
+from utils.typing_helper import send_with_typing
 
 from data.data import listeGifs
 
@@ -24,4 +25,4 @@ async def setup(bot):
         )
         embed.set_image(url=gif_url)
 
-        await interaction.response.send_message(embed=embed)
+        await send_with_typing(interaction.channel, lambda: interaction.response.send_message(embed=embed))

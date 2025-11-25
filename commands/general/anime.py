@@ -3,6 +3,7 @@
 import discord
 from discord import app_commands
 from urllib.parse import quote_plus # Pour formater les URL (ex: "One Piece" -> "One+Piece")
+from utils.typing_helper import send_with_typing
 
 # On importe la nouvelle version async
 from utils.anime_utils import search_anime
@@ -24,20 +25,20 @@ PLATEFORMES = {
 def get_link(platform_data, name_romaji):
     search_type = platform_data["type"]
     base_url = platform_data["base_url"]
-    
+
     if search_type == "path":
         # 'One Piece' -> 'one-piece'
         kebab_name = name_romaji.lower().replace(" ", "-")
         return base_url.rstrip('/') + f"/{kebab_name}"
-    
+
     if search_type == "query":
         # 'One Piece' -> 'One+Piece'
         query_name = quote_plus(name_romaji)
         return base_url + query_name
-        
+
     if search_type == "home":
         return base_url # Juste la page d'accueil
-    
+
     return None
 
 # Doit être asynchrone pour être chargé
@@ -69,9 +70,12 @@ async def setup(bot):
         # recherche AniList (maintenant avec 'await')
         info = await search_anime(nom_anime)
         if not info:
-            return await interaction.followup.send(
-                f"Aucun anime trouvé pour `{nom_anime}`.",
-                ephemeral=True
+            return await send_with_typing(
+                interaction.channel,
+                lambda: interaction.followup.send(
+                    f"Aucun anime trouvé pour `{nom_anime}`.",
+                    ephemeral=True
+                ),
             )
 
         precise_name = info["name"] # Le nom Romaji (ex: "One Piece")
@@ -88,9 +92,9 @@ async def setup(bot):
             # plateforme.value contient le nom (ex: "animesama")
             p_name = plateforme.value
             p_data = PLATEFORMES[p_name]
-            
+
             link = get_link(p_data, precise_name)
-            
+
             embed.description += f"\n\n[**Chercher sur {plateforme.name}**]({link})"
 
         else:
@@ -99,7 +103,7 @@ async def setup(bot):
             for p_name, p_data in PLATEFORMES.items():
                 link = get_link(p_data, precise_name)
                 links_list.append(f"[{p_name.capitalize()}]({link})")
-            
+
             # C'est plus propre de les mettre dans la description
             embed.description += "\n\n" + " | ".join(links_list)
 
@@ -107,4 +111,4 @@ async def setup(bot):
         if cover:
             embed.set_thumbnail(url=cover) # set_thumbnail est mieux pour les liens
 
-        await interaction.followup.send(embed=embed)
+        await send_with_typing(interaction.channel, lambda: interaction.followup.send(embed=embed))

@@ -3,13 +3,14 @@
 import discord
 import data.data as data
 import random  # Ajout de random pour choisir un gif
+from utils.typing_helper import send_with_typing
 
 # Doit être asynchrone pour être chargé
 async def setup(bot):
-    
+
     @bot.event
     async def on_member_join(member: discord.Member): # C'est bien de typer l'argument
-        
+
         # Ignorer les bots
         if member.bot:
             return
@@ -17,7 +18,7 @@ async def setup(bot):
         # 'system_channel' est le salon où Discord envoie les messages par défaut
         # (ex: "Jules a rejoint le serveur.")
         ch = member.guild.system_channel
-        
+
         # On vérifie que ce salon existe et que le bot peut y écrire
         if ch and ch.permissions_for(member.guild.me).send_messages:
             embed = discord.Embed(
@@ -25,7 +26,7 @@ async def setup(bot):
                 description=f"Bienvenue sur le serveur, {member.mention} !",
                 color=discord.Color.green()
             )
-            
+
             # Si data.gifBienvenue est une liste, on en prend un au hasard
             try:
                 if data.gifBienvenue: # On vérifie que la liste existe et n'est pas vide
@@ -36,9 +37,9 @@ async def setup(bot):
 
             # On ajoute l'avatar du membre, c'est plus sympa
             embed.set_thumbnail(url=member.display_avatar.url)
-            
+
             try:
-                await ch.send(embed=embed)
+                await send_with_typing(ch, lambda: ch.send(embed=embed))
             except discord.Forbidden:
                 print(f"Permissions manquantes pour envoyer le message de bienvenue dans {ch.name}")
             except Exception as e:

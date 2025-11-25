@@ -1,6 +1,7 @@
 # events/on_ready.py
 import discord
 import confidentiel
+from utils.typing_helper import send_with_typing
 
 # La fonction DOIT être asynchrone pour load_extension
 async def setup(bot):
@@ -16,6 +17,6 @@ async def setup(bot):
             try:
                 user = await bot.fetch_user(confidentiel.OWNER_ID) # fetch_user est plus fiable
                 if user:
-                    await user.send("Bot lancé et commandes synchronisées !")
+                    await send_with_typing(user, lambda: user.send("Bot lancé et commandes synchronisées !"))
             except Exception as e:
                 print(f"Impossible d'envoyer le DM au propriétaire : {e}")
