@@ -1,11 +1,10 @@
-# events/on_message.py
+# events/on_message.py (Correction de la logique de ciblage)
 
 import discord
 from core.ai import generate_reply
 from core.history import add_to_history
 import confidentiel
 
-# La fonction setup DOIT être asynchrone
 async def setup(bot):
     
     @bot.event
@@ -13,42 +12,46 @@ async def setup(bot):
         if message.author.bot:
             return
 
-        # --- Traitement du message ---
-        content = message.content
-        if message.attachments:
-            content += " (note : pièce jointe non lisible)"
-
-        # Variable pour l'ID du salon (ou de l'auteur en DM)
-        cid = None
-
-        # Cas 1 : DM
+        # --- Détermination du contexte et de la réaction ---
+        channel_id = message.channel.id
+        guild_id = message.guild.id if message.guild else None
+        
+        # 1. Vérifie si c'est un message privé (DM)
         if isinstance(message.channel, discord.DMChannel):
             cid = message.author.id
+            do_react = True
         
-        # Cas 2 : Serveur autorisé
-        elif message.guild and message.guild.id == confidentiel.SERVEUR_CIBLE:
-            if not confidentiel.SALONS_AUTORISES or message.channel.id in confidentiel.SALONS_AUTORISES:
-                cid = message.channel.id
-        
-        # --- Si le message est dans un contexte valide (DM ou salon autorisé) ---
-        if cid:
+        # 2. Vérifie si c'est un salon ciblé (addition)
+        elif channel_id in confidentiel.SALONS_AUTORISES:
+            cid = channel_id
+            do_react = True
+            
+        # 3. Vérifie si c'est le serveur cible (répond à tout)
+        elif guild_id == confidentiel.SERVEUR_CIBLE:
+            cid = channel_id
+            do_react = True
+            
+        # 4. Par défaut, on ne réagit pas
+        else:
+            do_react = False
+            cid = None
+
+        # --- Exécution de la réaction IA si do_react est True ---
+        if do_react and cid:
+            content = message.content
+            if message.attachments:
+                content += " (note : pièce jointe non lisible)"
+            
             try:
-                # On ajoute à l'historique
                 add_to_history(cid, "user", content)
-                
-                # On génère la réponse (asynchrone)
                 rep = await generate_reply(cid)
-                
-                # On envoie la réponse
                 await message.channel.send(rep)
-                
-                # On arrête le traitement pour ne pas exécuter bot.process_commands
                 return 
+
             except Exception as e:
                 print(f"Erreur lors du traitement on_message pour {cid}: {e}")
-                # On évite de planter si l'IA ou l'historique échoue
+                await message.channel.send("Oups, j'ai eu un petit bug interne.")
                 return
 
-        # --- Si le message n'était NI en DM, NI dans un salon autorisé ---
-        # On traite les commandes normales (ex: /anime)
+        # --- Si aucune des conditions n'est remplie ---
         await bot.process_commands(message)

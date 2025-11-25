@@ -12,7 +12,6 @@ def add_to_history(channel_id, role, content):
         historiques_salons[channel_id] = init_history()
     historiques_salons[channel_id].append({"role": role, "content": content})
 
-# --- CETTE FONCTION MANQUAIT ---
 def get_history(channel_id):
     """
     Récupère l'historique d'un salon, ou en crée un vide s'il n'existe pas.
