@@ -10,22 +10,39 @@ from .history import add_to_history, get_history, init_history
 # On instancie le client ASYNCHRONE
 client_ai = AsyncOpenAI(api_key=confidentiel.OPENAI_API_KEY)
 
+# core/ai.py
+
+# ... (imports et client_ai) ...
+
 # La fonction doit être asynchrone
 async def generate_reply(channel_id):
-    # On suppose que get_history est valide (on le corrigera après)
-    msgs = get_history(channel_id)[-10:]
+    # On récupère l'historique COMPLET
+    full_history = get_history(channel_id)
 
+    # 1. On extrait le System Prompt (le premier message)
+    system_prompt = full_history[0]
+    
+    # 2. On prend les N derniers messages d'échange (excluant le system prompt)
+    # On prend les 10 messages qui ont eu lieu après le system prompt initial.
+    recent_messages = full_history[1:][-10:] 
+
+    # 3. On reconstruit l'historique à envoyer à l'API
+    # On commence toujours par le system prompt pour l'ancrer.
+    msgs = [system_prompt] + recent_messages 
+
+    # On ajoute la consigne générique à la fin (c'est une bonne pratique)
     msgs.append({
         "role": "system",
         "content": "Réponds toujours quelque chose, même si le message reçu est très court."
     })
 
     try:
+# ... (le reste du code est inchangé) ...
         # On AWAIT l'appel
         res = await client_ai.chat.completions.create(
             model="gpt-4o-mini",      # Corrigé: gpt-4o-mini
             messages=msgs,
-            max_tokens=200,           # Corrigé: max_tokens
+            max_tokens=2048,           # Corrigé: max_tokens
             temperature=0.7,
             frequency_penalty=0.2,
             presence_penalty=0.1,
